@@ -13,12 +13,6 @@ from tqdm import trange, tqdm
 from diffusers import DDPMScheduler, UNet2DModel, UNet2DConditionModel, DDPMPipeline, DDIMPipeline
 from matplotlib import pyplot as plt
 
-def set_all_seeds(seed): 
-    torch.manual_seed(seed)
-    np.random.seed(seed)
-    random.seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
 
 
 class Diffusion:
@@ -26,18 +20,18 @@ class Diffusion:
   Класс для работы с диффузионными моделями.
   Позволяет производить как обучение, так и семплирование.
   """
-  def __init__(self, beta, diffusion_steps, model, conditional = False):
+  def __init__(self, beta_start, beta_end, diffusion_steps, conditional, unet):
     """
     alpha = ()
     beta = ()
     """
-    self.device = "cuda" if torch.cuda.is_available() else "cpu"
+    self.device = "cpu" #"cuda" if torch.cuda.is_available() else "cpu"
     # Модель
-    self.model = model.to(self.device)
+    self.unet = unet.to(self.device)
     # Лосс
     self.criterion = nn.MSELoss()
     # Параметры диффузии
-    self.beta = beta
+    self.beta = (beta_start, beta_end)
     self.diffusion_steps = diffusion_steps
     self.conditional = conditional
 
@@ -97,9 +91,9 @@ class Diffusion:
 
         # Подаем метки или нет
         if self.conditional:
-          predicted_noise = self.model(noised_images, steps.to(self.device),  labels_embedded, labels.unsqueeze(-1) ).sample
+          predicted_noise = self.unet(noised_images, steps.to(self.device),  labels_embedded, labels.unsqueeze(-1) ).sample
         else:
-          predicted_noise = self.model(noised_images, steps.to(self.device)).sample
+          predicted_noise = self.unet(noised_images, steps.to(self.device)).sample
         # Лосс, шаг оптимизатора
         loss = self.criterion(noise, predicted_noise)
         writer.add_scalar("Loss/MSE", loss.item(), i + epoch * len(dataloader))
@@ -141,9 +135,9 @@ class Diffusion:
         with torch.no_grad():
           if self.conditional:
 
-            predicted_noise = model(noised_images, steps.to(self.device), labels_embedded, labels.unsqueeze(-1)).sample
+            predicted_noise = self.unet(noised_images, steps.to(self.device), labels_embedded, labels.unsqueeze(-1)).sample
           else:
-            predicted_noise = model(noised_images, steps.to(self.device)).sample
+            predicted_noise = self.unet(noised_images, steps.to(self.device)).sample
 
         add_noise = True if i > 1 else False
         noised_images = self.sample_images_one_step(noised_images, predicted_noise, steps, add_noise=add_noise)
@@ -163,6 +157,6 @@ class Diffusion:
         num_train_timesteps=self.diffusion_steps, beta_start=self.beta[0], beta_end=self.beta[1])
 
     generator = torch.Generator(device=self.device).manual_seed(42)
-    pipeline = pipline_mapping[strategy](unet=self.model, scheduler=noise_scheduler)
+    pipeline = pipline_mapping[strategy](unet=self.unet, scheduler=noise_scheduler)
     images = pipeline(batch_size=num_images, generator=generator, num_inference_steps=num_steps).images
     return images
