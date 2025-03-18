@@ -1,0 +1,8 @@
+seed : 42
+ckpt_path : checkpoints
+log_path : logs
+num_epochs : 3
+T : 100
+lr : 1e-3
+warm_up_steps : 100
+beta : 0.9
