@@ -9,3 +9,8 @@ clearml
 tqdm
 scikit-learn
 opencv-python
+torchmetrics
+tqdm
+logging
+hydra
+omegaconf

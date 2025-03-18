@@ -1,4 +1,3 @@
-import seaborn as sns
 import numpy as np
 
 import torch
@@ -101,6 +100,12 @@ class Diffusion:
         loss.backward()
         optimizer.step()
         scheduler.step()
+        
+       if epoch % 2 == 0:
+       	sampled_images = self.sample_images(2)
+       	sampled_images  = sampled_images.cpu().numpy()
+        cv2.imwrite(sampled_images, f"sampled_images_step{i}.png")
+       
 
   def sample_images_one_step(self, noised_images, predicted_noise, steps, add_noise=False):
     """

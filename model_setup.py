@@ -6,7 +6,7 @@ from omegaconf import OmegaConf
 
 #@hydra.main(version_base=None, config_path="configs", config_name="main") 
 def prepare_model_setup():
-    with initialize(version_base=None, config_path="~/home/vlad/jptr/AnyaMNIST/configs"):
+    with initialize(version_base=None, config_path="~/home/anna/DiffusionMNIST/configs"):
         cfg = compose(config_name="main")
     task = Task.init(project_name="examples", task_name="Pipeline step 2 models")
  
